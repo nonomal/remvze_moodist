@@ -3,6 +3,16 @@ import { Howl } from 'howler';
 
 import { useSSR } from './use-ssr';
 
+/**
+ * A custom React hook to manage sound effects using Howler.js.
+ *
+ * @param {string} src - The source URL of the sound file.
+ * @param {number} [volume=1] - The initial volume of the sound, ranging from 0.0 to 1.0.
+ * @returns {{ play: () => void, stop: () => void, pause: () => void }} An object containing control functions for the sound:
+ *   - play: Function to play the sound.
+ *   - stop: Function to stop the sound.
+ *   - pause: Function to pause the sound.
+ */
 export function useSoundEffect(src: string, volume: number = 1) {
   const { isBrowser } = useSSR();
 
@@ -20,7 +30,7 @@ export function useSoundEffect(src: string, volume: number = 1) {
   }, [src, isBrowser]);
 
   useEffect(() => {
-    if (sound) sound.volume(typeof volume === 'number' ? volume : 1);
+    if (sound) sound.volume(volume ?? 1);
   }, [sound, volume]);
 
   const play = useCallback(() => {

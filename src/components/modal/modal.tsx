@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IoClose } from 'react-icons/io5/index';
+import FocusTrap from 'focus-trap-react';
+
+import { Portal } from '@/components/portal';
 
 import { fade, mix, slideY } from '@/lib/motion';
 import { cn } from '@/helpers/styles';
@@ -11,14 +14,18 @@ interface ModalProps {
   children: React.ReactNode;
   lockBody?: boolean;
   onClose: () => void;
+  persist?: boolean;
   show: boolean;
   wide?: boolean;
 }
+
+const TRANSITION_DURATION = 300;
 
 export function Modal({
   children,
   lockBody = true,
   onClose,
+  persist = false,
   show,
   wide,
 }: ModalProps) {
@@ -29,42 +36,72 @@ export function Modal({
 
   useEffect(() => {
     if (show && lockBody) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflowY = 'hidden';
     } else if (lockBody) {
-      document.body.style.overflow = 'auto';
+      // Wait for transition to finish before allowing scrollbar to return
+      setTimeout(() => {
+        document.body.style.overflowY = 'auto';
+      }, TRANSITION_DURATION);
     }
   }, [show, lockBody]);
 
-  return (
-    <AnimatePresence>
-      {show && (
-        <>
-          <motion.div
-            animate="show"
-            className={styles.overlay}
-            exit="hidden"
-            initial="hidden"
-            variants={variants.overlay}
-            onClick={onClose}
-            onKeyDown={onClose}
-          />
-          <div className={styles.modal}>
-            <motion.div
-              animate="show"
-              className={cn(styles.content, wide && styles.wide)}
-              exit="hidden"
-              initial="hidden"
-              variants={variants.modal}
-            >
-              <button className={styles.close} onClick={onClose}>
-                <IoClose />
-              </button>
+  useEffect(() => {
+    function keyListener(e: KeyboardEvent) {
+      if (show && e.key === 'Escape') {
+        onClose();
+      }
+    }
 
-              {children}
-            </motion.div>
-          </div>
-        </>
+    document.addEventListener('keydown', keyListener);
+
+    return () => document.removeEventListener('keydown', keyListener);
+  }, [onClose, show]);
+
+  const animationProps = persist
+    ? {
+        animate: show ? 'show' : 'hidden',
+      }
+    : {
+        animate: 'show',
+        exit: 'hidden',
+        initial: 'hidden',
+      };
+
+  const content = (
+    <FocusTrap active={show}>
+      <div>
+        <motion.div
+          {...animationProps}
+          className={styles.overlay}
+          transition={{ duration: TRANSITION_DURATION / 1000 }}
+          variants={variants.overlay}
+          onClick={onClose}
+          onKeyDown={onClose}
+        />
+        <div className={styles.modal}>
+          <motion.div
+            {...animationProps}
+            className={cn(styles.content, wide && styles.wide)}
+            transition={{ duration: TRANSITION_DURATION / 1000 }}
+            variants={variants.modal}
+          >
+            <button className={styles.close} onClick={onClose}>
+              <IoClose />
+            </button>
+            {children}
+          </motion.div>
+        </div>
+      </div>
+    </FocusTrap>
+  );
+
+  return (
+    <Portal>
+      {persist ? (
+        <div style={{ display: show ? 'block' : 'none' }}>{content}</div>
+      ) : (
+        <AnimatePresence>{show && content}</AnimatePresence>
       )}
-    </AnimatePresence>
+    </Portal>
   );
 }

@@ -2,7 +2,8 @@ import { FaPlay, FaRegTrashAlt } from 'react-icons/fa/index';
 
 import styles from './list.module.css';
 
-import { usePresetStore, useSoundStore } from '@/store';
+import { useSoundStore } from '@/stores/sound';
+import { usePresetStore } from '@/stores/preset';
 
 interface ListProps {
   close: () => void;
@@ -25,15 +26,15 @@ export function List({ close }: ListProps) {
         <p className={styles.empty}>You don&apos;t have any presets yet.</p>
       )}
 
-      {presets.map((preset, index) => (
-        <div className={styles.preset} key={index}>
+      {presets.map(preset => (
+        <div className={styles.preset} key={preset.id}>
           <input
             placeholder="Untitled"
             type="text"
             value={preset.label}
-            onChange={e => changeName(index, e.target.value)}
+            onChange={e => changeName(preset.id, e.target.value)}
           />
-          <button onClick={() => deletePreset(index)}>
+          <button onClick={() => deletePreset(preset.id)}>
             <FaRegTrashAlt />
           </button>
           <button
